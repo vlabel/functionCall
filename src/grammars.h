@@ -6,7 +6,6 @@
 #include <boost/spirit/include/qi.hpp>
 
 using namespace boost::spirit;
-//namespace qi = boost::spirit::qi;
 #include <boost/spirit/include/phoenix_core.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/phoenix_stl.hpp>
@@ -16,62 +15,62 @@ using namespace boost::spirit;
 #include <boost/spirit/include/karma.hpp>
 
 template <typename Iterator> struct ParseGrammar: qi::grammar<Iterator, Message()> {
-    qi::rule<Iterator>                            _space;
-    qi::rule<Iterator, Message()>                 _message;
-    qi::rule<Iterator, Request()>                 _request;
-    qi::rule<Iterator, Response()>                _response;
-    qi::rule<Iterator, uint32_t()>                _code;
-    qi::rule<Iterator, std::string()>             _id;
-    qi::rule<Iterator, std::vector<Parameter>()>  _params;
-    qi::rule<Iterator, Parameter() >              _param;
-    qi::rule<Iterator, std::vector<Parameter>()>  _list;
-    qi::rule<Iterator, uint64_t()>                _number;
-    qi::rule<Iterator, std::string()>             _string;
+    qi::rule<Iterator>                            m_space;
+    qi::rule<Iterator, Message()>                 m_message;
+    qi::rule<Iterator, Request()>                 m_request;
+    qi::rule<Iterator, Response()>                m_response;
+    qi::rule<Iterator, uint32_t()>                m_code;
+    qi::rule<Iterator, std::string()>             m_id;
+    qi::rule<Iterator, std::vector<Parameter>()>  m_params;
+    qi::rule<Iterator, Parameter() >              m_param;
+    qi::rule<Iterator, std::vector<Parameter>()>  m_list;
+    qi::rule<Iterator, uint64_t()>                m_number;
+    qi::rule<Iterator, std::string()>             m_string;
 
-    ParseGrammar(): qi::grammar<Iterator, Message()>(_message) {
-        _space        = +ascii::space;
+    ParseGrammar(): qi::grammar<Iterator, Message()>(m_message) {
+        m_space       = +ascii::space;
 
-        _message            = ( _request | _response) [qi::_val = qi::_1];
+        m_message           = ( m_request| m_response) [qi::_val = qi::_1];
 
-        _request      = _id               
+        m_request     = m_id              
 				       [boost::phoenix::at_c<0>(qi::_val) = qi::_1]
-                        >> _space >> _id       
+                        >> m_space >> m_id      
 				       [boost::phoenix::at_c<1>(qi::_val) = qi::_1]
-                        >> -(_space >> _params 
+                        >> -(m_space >> m_params
 					   [boost::phoenix::at_c<2>(qi::_val) = qi::_1]);
 
-        _response     = _code
+        m_response    = m_code
 				        [boost::phoenix::at_c<0>(qi::_val) = qi::_1]
-						>> -(_space >> _params   
+						>> -(m_space >> m_params  
 						[boost::phoenix::at_c<1>(qi::_val) = qi::_1]);
 
-        _code         = qi::hex      
+        m_code        = qi::hex      
 				        [qi::_val = qi::_1];
 
-        _id           = +(ascii::char_("A-Za-z0-9_")         
+        m_id          = +(ascii::char_("A-Za-z0-9_")         
 						[qi::_val += qi::_1]);
 
-        _params       = (_param  
+        m_params      = (m_param 
 						[boost::phoenix::push_back(qi::_val, qi::_1)]
-                        % _space) | qi::eps;
+                        % m_space) | qi::eps;
 
-        _param        = (_list
-                        | _number
-                        | _string)          
+        m_param       = (m_list
+                        | m_number
+                        | m_string)          
 				        [qi::_val = qi::_1];
 
-        _list         = '{' >> -_space
-                        >> (_param    
+        m_list        = '{' >> -m_space
+                        >> (m_param   
 						[boost::phoenix::push_back(qi::_val, qi::_1)]
-                        % _space | qi::eps)
-                        >> -_space >> '}';
+                        % m_space | qi::eps)
+                        >> -m_space >> '}';
 
-        _number       = ((qi::lit("0x") > qi::hex     
+        m_number      = ((qi::lit("0x") > qi::hex     
 						[qi::_val = qi::_1])
                         | qi::long_long    
 						[qi::_val = qi::_1]);
 
-        _string       = '"' >> *(
+        m_string      = '"' >> *(
                             ('\\' >> ascii::char_              [qi::_val += qi::_1])
                             | (ascii::char_ - ascii::char_("\"\\")) [qi::_val += qi::_1]
                         ) >> '"';
@@ -80,32 +79,32 @@ template <typename Iterator> struct ParseGrammar: qi::grammar<Iterator, Message(
 
 template<typename Iterator>
 struct GenerateGrammar: karma::grammar<Iterator, Message()> {
-    karma::rule<Iterator>                          _space;
-    karma::rule<Iterator, Message()>            _message;
-    karma::rule<Iterator, Request()>               _request;
-    karma::rule<Iterator, Response()>              _response;
-    karma::rule<Iterator, uint32_t()>          _code;
-    karma::rule<Iterator, std::string()>           _id;
-    karma::rule<Iterator, std::vector<Parameter>()> _params;
-    karma::rule<Iterator, Parameter() >             _param;
-    karma::rule<Iterator, std::vector<Parameter>()> _list;
-    karma::rule<Iterator, uint64_t()>             _number;
-    karma::rule<Iterator, std::string()>           _string;
-    karma::rule<Iterator, char()>                  _char;
+    karma::rule<Iterator>                          m_space;
+    karma::rule<Iterator, Message()>               m_message;
+    karma::rule<Iterator, Request()>               m_request;
+    karma::rule<Iterator, Response()>              m_response;
+    karma::rule<Iterator, uint32_t()>              m_code;
+    karma::rule<Iterator, std::string()>           m_id;
+    karma::rule<Iterator, std::vector<Parameter>()>m_params;
+    karma::rule<Iterator, Parameter() >            m_param;
+    karma::rule<Iterator, std::vector<Parameter>()>m_list;
+    karma::rule<Iterator, uint64_t()>              m_number;
+    karma::rule<Iterator, std::string()>           m_string;
+    karma::rule<Iterator, char()>                  m_char;
 
-    GenerateGrammar(): karma::grammar<Iterator, Message()>(_message) {
-        _space        = karma::lit(' ');
-        _message            =  _request | _response; 
-        _request      = '+' << _id << _space << _id << (_space << _params | karma::eps);
-        _response     = '=' << _code << (_space << _params | karma::eps);
-        _code         = karma::upper[karma::right_align(8, '0')[karma::hex]];
-        _id           = karma::string;
-        _params       = _param % _space;
-        _param        = _list | _number | _string;
-        _list         = '{' << _space << (_param % _space << _space | karma::eps) << '}';
-        _number       = karma::long_long; 
-        _string       = '"' << *_char << '"';
-        _char         = '\\' << karma::char_('\\') | '\\' << karma::char_('"') | karma::char_;
+    GenerateGrammar(): karma::grammar<Iterator, Message()>(m_message) {
+        m_space        = karma::lit(' ');
+        m_message           =  m_request| m_response; 
+        m_request     = '+' << m_id<< m_space << m_id << (m_space << m_params| karma::eps);
+        m_response    = '=' << m_code<< (m_space << m_params| karma::eps);
+        m_code        = karma::upper[karma::right_align(8, '0')[karma::hex]];
+        m_id          = karma::string;
+        m_params      = m_param% m_space;
+        m_param       = m_list| m_number| m_string;
+        m_list        = '{' << m_space << (m_param% m_space << m_space | karma::eps) << '}';
+        m_number      = karma::long_long; 
+        m_string      = '"' << *m_char << '"';
+        m_char         = '\\' << karma::char_('\\') | '\\' << karma::char_('"') | karma::char_;
     }
 };
 
